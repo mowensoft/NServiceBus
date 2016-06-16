@@ -32,9 +32,9 @@
         {
             public Sender()
             {
-                EndpointSetup<DefaultServer>(c =>
+                EndpointSetup<DefaultServer>((c, r) =>
                 {
-                    c.Routing().RouteToEndpoint(typeof(MyRequest), ReceiverEndpoint);
+                    c.UseTransport(r.GetTransportType()).Routing().RouteTo(typeof(MyRequest), ReceiverEndpoint);
                     c.Routing().Mapping.Physical.Add(new EndpointInstance(ReceiverEndpoint, "XYZ"));
                 });
             }
