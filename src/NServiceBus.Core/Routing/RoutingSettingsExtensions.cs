@@ -20,7 +20,7 @@
         /// <summary>
         /// Configures the routing.
         /// </summary>
-        public static RoutingSettings Routing<T>(this TransportExtensions<T> config) 
+        public static RoutingSettings<T> Routing<T>(this TransportExtensions<T> config) 
             where T : TransportDefinition
         {
             Guard.AgainstNull(nameof(config), config);
@@ -43,7 +43,6 @@
         /// Configures physical routing.
         /// </summary>
         /// <param name="config">Config object.</param>
-        /// <returns></returns>
         public static EndpointInstances Physical<T>(this RoutingSettings<T> config) 
             where T : TransportDefinition, INonCompetingConsumersTransport
         {
