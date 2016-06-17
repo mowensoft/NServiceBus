@@ -737,9 +737,9 @@ namespace NServiceBus
     }
     public class static MessageDrivenPubSubExtensions
     {
-        public static void RegisterPublisherForAssembly<T>(this NServiceBus.TransportExtensions<T> extensions, string publisherEndpoint, System.Reflection.Assembly eventAssembly, string eventNamespace = null)
+        public static void RegisterPublisherForAssembly<T>(this NServiceBus.RoutingSettings<T> routingSettings, string publisherEndpoint, System.Reflection.Assembly eventAssembly, string eventNamespace = null)
             where T : NServiceBus.Transports.TransportDefinition, NServiceBus.Routing.IMessageDrivenSubscriptionTransport { }
-        public static void RegisterPublisherForType<T>(this NServiceBus.TransportExtensions<T> extensions, string publisherEndpoint, System.Type eventType)
+        public static void RegisterPublisherForType<T>(this NServiceBus.RoutingSettings<T> routingSettings, string publisherEndpoint, System.Type eventType)
             where T : NServiceBus.Transports.TransportDefinition, NServiceBus.Routing.IMessageDrivenSubscriptionTransport { }
     }
     public class static MessageDrivenSubscriptionsConfigExtensions
