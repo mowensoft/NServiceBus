@@ -903,8 +903,6 @@ namespace NServiceBus
         where T : NServiceBus.Transports.TransportDefinition { }
     public class static RoutingSettingsExtensions
     {
-        public static NServiceBus.Routing.EndpointInstances Physical<T>(this NServiceBus.RoutingSettings<T> config)
-            where T : NServiceBus.Transports.TransportDefinition, NServiceBus.Routing.INonCompetingConsumersTransport { }
         public static NServiceBus.RoutingSettings Routing(this NServiceBus.TransportExtensions config) { }
         public static NServiceBus.RoutingSettings<T> Routing<T>(this NServiceBus.TransportExtensions<T> config)
             where T : NServiceBus.Transports.TransportDefinition { }
