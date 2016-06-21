@@ -8,9 +8,10 @@
     using DeliveryConstraints;
     using Logging;
     using Pipeline;
+    using Routing;
     using Transports;
 
-    class SecondLevelRetriesBehavior : ForkConnector<ITransportReceiveContext, IRoutingContext>
+    class SecondLevelRetriesBehavior
     {
         public SecondLevelRetriesBehavior(SecondLevelRetryPolicy retryPolicy, string localAddress, FailureInfoStorage failureInfoStorage)
         {
@@ -19,7 +20,17 @@
             this.failureInfoStorage = failureInfoStorage;
         }
 
-        public override async Task Invoke(ITransportReceiveContext context, Func<Task> next, Func<IRoutingContext, Task> fork)
+        public Task Invoke(ITransportReceiveContext context, Func<Task> next)
+        {
+            return Invoke(context, next, ctx =>
+            {
+                var cache = context.Extensions.Get<IPipelineCache>();
+                var pipeline = cache.Pipeline<IRoutingContext>();
+                return pipeline.Invoke(ctx);
+            });
+        }
+
+        public async Task Invoke(ITransportReceiveContext context, Func<Task> next, Func<IRoutingContext, Task> fork)
         {
             var failureInfo = failureInfoStorage.GetFailureInfoForMessage(context.Message.MessageId);
 
@@ -63,7 +74,7 @@
                 messageToRetry.Headers[Headers.Retries] = currentRetry.ToString();
                 messageToRetry.Headers[Headers.RetriesTimestamp] = DateTimeExtensions.ToWireFormattedString(DateTime.UtcNow);
 
-                var dispatchContext = this.CreateRoutingContext(messageToRetry, localAddress, context);
+                var dispatchContext = new RoutingContext(messageToRetry, new UnicastRoutingStrategy(localAddress), context);
 
                 context.Extensions.Set(new List<DeliveryConstraint>
                 {

@@ -113,9 +113,9 @@
 
             var behavior = new SecondLevelRetriesBehavior(new FakePolicy(TimeSpan.FromSeconds(0)), string.Empty, failureInfoStorage);
 
-            await behavior.Invoke(context, c =>
+            await behavior.Invoke(context, () =>
             {
-                c.Message.Body = Encoding.UTF8.GetBytes("modified");
+                context.Message.Body = Encoding.UTF8.GetBytes("modified");
                 throw new Exception();
             });
 

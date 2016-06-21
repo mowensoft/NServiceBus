@@ -61,11 +61,13 @@
             var policy = new FakePolicy();
             var failureStorage = new FailureInfoStorage(10);
 
+            var flrBehavior = new FirstLevelRetriesBehavior(failureStorage, new FirstLevelRetryPolicy(0));
+            var slrBehavior = new  SecondLevelRetriesBehavior(policy, "", failureStorage);
+            var errorBehavior = new MoveFaultsToErrorQueueBehavior(criticalError, "", TransportTransactionMode.None, failureStorage);
+            
             var chain = new BehaviorChain(new[]
-           {
-                new BehaviorInstance(typeof(MoveFaultsToErrorQueueBehavior), new MoveFaultsToErrorQueueBehavior(criticalError, "", TransportTransactionMode.None, failureStorage)),
-                new BehaviorInstance(typeof(SecondLevelRetriesBehavior), new SecondLevelRetriesBehavior(policy, "", failureStorage)),
-                new BehaviorInstance(typeof(FirstLevelRetriesBehavior), new FirstLevelRetriesBehavior(failureStorage, new FirstLevelRetryPolicy(0))),
+            {
+                new BehaviorInstance(typeof(RecoverabilityBehavior), new RecoverabilityBehavior(flrBehavior, slrBehavior, errorBehavior, true, true)),
                 new BehaviorInstance(typeof(LastBehaviorT), lastBehavior)
             });
 

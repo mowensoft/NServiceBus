@@ -7,7 +7,7 @@
     using Pipeline;
     using Transports;
 
-    class MoveFaultsToErrorQueueBehavior : ForkConnector<ITransportReceiveContext, IFaultContext>
+    class MoveFaultsToErrorQueueBehavior
     {
         public MoveFaultsToErrorQueueBehavior(CriticalError criticalError, string localAddress, TransportTransactionMode transportTransactionMode, FailureInfoStorage failureInfoStorage)
         {
@@ -19,7 +19,17 @@
 
         bool RunningWithTransactions => transportTransactionMode != TransportTransactionMode.None;
 
-        public override async Task Invoke(ITransportReceiveContext context, Func<Task> next, Func<IFaultContext, Task> fork)
+        public Task Invoke(ITransportReceiveContext context, Func<Task> next)
+        {
+            return Invoke(context, next, ctx =>
+            {
+                var cache = context.Extensions.Get<IPipelineCache>();
+                var pipeline = cache.Pipeline<IFaultContext>();
+                return pipeline.Invoke(ctx);
+            });
+        }
+
+        public async Task Invoke(ITransportReceiveContext context, Func<Task> next, Func<IFaultContext, Task> fork)
         {
             var message = context.Message;
 
@@ -63,7 +73,7 @@
                 message.Headers.Remove(Headers.FLRetries);
 
                 var outgoingMessage = new OutgoingMessage(message.MessageId, message.Headers, message.Body);
-                var faultContext = this.CreateFaultContext(context, outgoingMessage, localAddress, exception);
+                var faultContext = new FaultContext(outgoingMessage, localAddress, exception, context);
 
                 failureInfoStorage.ClearFailureInfoForMessage(message.MessageId);
 

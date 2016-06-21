@@ -6,7 +6,7 @@ namespace NServiceBus
     using Logging;
     using Pipeline;
 
-    class FirstLevelRetriesBehavior : Behavior<ITransportReceiveContext>
+    class FirstLevelRetriesBehavior
     {
         public FirstLevelRetriesBehavior(FailureInfoStorage storage, FirstLevelRetryPolicy retryPolicy)
         {
@@ -14,7 +14,7 @@ namespace NServiceBus
             this.retryPolicy = retryPolicy;
         }
 
-        public override async Task Invoke(ITransportReceiveContext context, Func<Task> next)
+        public async Task Invoke(ITransportReceiveContext context, Func<Task> next)
         {
             try
             {

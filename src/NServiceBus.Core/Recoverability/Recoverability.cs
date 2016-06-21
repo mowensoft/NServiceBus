@@ -35,30 +35,38 @@
             var failureInfoStorage = new FailureInfoStorage(context.Settings.Get<int>(FailureInfoStorageCacheSizeKey));
             var localAddress = context.Settings.LocalAddress();
 
-            context.Pipeline.Register("MoveFaultsToErrorQueue", b => new MoveFaultsToErrorQueueBehavior(
-                b.Build<CriticalError>(),
-                localAddress,
-                transportTransactionMode,
-                failureInfoStorage), "Moves failing messages to the configured error queue");  //context.Pipeline.Register(new MoveFaultsToErrorQueueBehavior.Registration(context.Settings.LocalAddress(), transportTransactionMode, failureInfoStorage));
+            context.Pipeline.Register("Recoverability", b =>
+            {
+                var errorBehavior = new MoveFaultsToErrorQueueBehavior(
+                    b.Build<CriticalError>(),
+                    localAddress,
+                    transportTransactionMode,
+                    failureInfoStorage);
+
+                SecondLevelRetriesBehavior slrBehavior = null;
+
+                if (IsDelayedRetriesEnabled(context.Settings))
+                {
+                    var retryPolicy = GetDelayedRetryPolicy(context.Settings);
+                    slrBehavior = new SecondLevelRetriesBehavior(retryPolicy, localAddress, failureInfoStorage);
+                }
+
+                FirstLevelRetriesBehavior flrBehavior = null;
+
+                if (IsImmediateRetriesEnabled(context.Settings))
+                {
+                    var maxRetries = GetMaxRetries(context.Settings);
+                    var retryPolicy = new FirstLevelRetryPolicy(maxRetries);
+
+                    flrBehavior = new FirstLevelRetriesBehavior(failureInfoStorage, retryPolicy);
+                }
+
+                return new RecoverabilityBehavior(flrBehavior, slrBehavior, errorBehavior, flrBehavior != null, slrBehavior != null);
+            }, "Handles message recoverability");  
 
             context.Pipeline.Register("AddExceptionHeaders", new AddExceptionHeadersBehavior(), "Adds the exception headers to the message");
             context.Pipeline.Register(new FaultToDispatchConnector(errorQueue), "Connector to dispatch faulted messages");
-
-            if (IsDelayedRetriesEnabled(context.Settings))
-            {
-                var retryPolicy = GetDelayedRetryPolicy(context.Settings);
-
-                context.Pipeline.Register("SecondLevelRetries", b => new SecondLevelRetriesBehavior(retryPolicy, localAddress, failureInfoStorage), "Performs second level retries");
-            }
-
-            if (IsImmediateRetriesEnabled(context.Settings))
-            {
-                var maxRetries = GetMaxRetries(context.Settings);
-                var retryPolicy = new FirstLevelRetryPolicy(maxRetries);
-
-                context.Pipeline.Register("FirstLevelRetries", b => new FirstLevelRetriesBehavior(failureInfoStorage, retryPolicy), "Performs first level retries");
-            }
-
+           
             RaiseLegacyNotifications(context);
         }
 
